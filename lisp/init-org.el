@@ -131,13 +131,77 @@ typical word processor."
 ;;; To-do settings
 
 (setq org-todo-keywords
-      (quote ((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!/!)")
+      (quote ((sequence "TODO(t)" "NEXT(n)" "ACTIVE(a!)" "|" "DONE(d!/!)")
               (sequence "PROJECT(p)" "|" "DONE(d!/!)" "CANCELLED(c@/!)")
-              (sequence "WAITING(w@/!)" "HOLD(h)" "|" "CANCELLED(c@/!)"))))
+              (sequence "WAIT(w@/!)" "ICEBOX(i@/!)" "|" "CANCELLED(c@/!)"))))
 
-(setq org-todo-keyword-faces
-      (quote (("NEXT" :inherit warning)
-              ("PROJECT" :inherit font-lock-string-face))))
+;(setq org-todo-keyword-faces
+;      (quote (("NEXT" :inherit warning)
+;              ("PROJECT" :inherit font-lock-string-face))))
+
+(defface org-next
+    '((((class color) (min-colors 16) (background light)) (:foreground "SpringGreen" :bold t))
+      (((class color) (min-colors 16) (background dark))  (:foreground "LimeGreen" :bold t))
+      (((class color) (min-colors 8)  (background light)) (:foreground "green" :bold t))
+      (((class color) (min-colors 8)  (background dark))  (:foreground "green" :bold t))
+      (t (:bold t)))
+  "Face for deadlines and TODO keywords."
+  :group 'org-faces)
+
+(defface org-active
+    '((((class color) (min-colors 16) (background light)) (:background "Green" :foreground "black" :bold t))
+      (((class color) (min-colors 16) (background dark))  (:background "LimeGreen" :foreground "black"  :bold t))
+      (((class color) (min-colors 8)  (background light)) (:background "green" :foreground "black"  :bold t))
+      (((class color) (min-colors 8)  (background dark))  (:background "green" :foreground "black"  :bold t))
+      (t (:bold t)))
+  "Face for deadlines and TODO keywords."
+  :group 'org-faces)
+
+(defface org-wait
+    '((((class color) (min-colors 16) (background light)) (:foreground "black" :background "gold" :bold t))
+      (((class color) (min-colors 16) (background dark))  (:foreground "black" :background "gold" :bold t))
+      (((class color) (min-colors 8)  (background light)) (:foreground "black" :background "gold" :bold t))
+      (((class color) (min-colors 8)  (background dark))  (:foreground "black" :background "gold" :bold t))
+      (t (:bold t)))
+  "Face for deadlines and TODO keywords."
+  :group 'org-faces)
+
+(defface org-finished
+    '((((class color) (min-colors 16) (background light)) (:foreground "black" :bold t))
+      (((class color) (min-colors 16) (background dark))  (:foreground "black" :bold t))
+      (((class color) (min-colors 8)  (background light)) (:foreground "black" :bold t))
+      (((class color) (min-colors 8)  (background dark))  (:foreground "black" :bold t))
+      (t (:bold t)))
+  "Face for deadlines and TODO keywords."
+  :group 'org-faces)
+
+(defface org-canceled
+    '((((class color) (min-colors 16) (background light)) (:foreground "SlateGray" :background "black" :bold t))
+      (((class color) (min-colors 16) (background dark))  (:foreground "SlateGray" :background "black" :bold t))
+      (((class color) (min-colors 8)  (background light)) (:foreground "gray" :background "black" :bold t))
+      (((class color) (min-colors 8)  (background dark))  (:foreground "gray" :background "black" :bold t))
+      (t (:bold t)))
+  "Face for deadlines and TODO keywords."
+  :group 'org-faces)
+
+(defface org-icebox
+    '((((class color) (min-colors 16) (background light)) (:foreground "blue" :background "SlateGray" :bold t))
+      (((class color) (min-colors 16) (background dark))  (:foreground "blue" :background "SlateGray" :bold t))
+      (((class color) (min-colors 8)  (background light)) (:foreground "blue" :background "gray" :bold t))
+      (((class color) (min-colors 8)  (background dark))  (:foreground "blue" :background "gray" :bold t))
+      (t (:bold t)))
+  "Face for deadlines and TODO keywords."
+  :group 'org-faces)
+
+   (setq org-todo-keyword-faces
+     '(("TODO" . org-warning)
+       ("NEXT" . org-next) 
+       ("ACTIVE" . org-active)
+       ("ICEBOX" . org-icebox)
+       ("WAIT" . org-wait)
+       ("DONE" . org-finished) 
+       ("CANCELED" . org-canceled)
+        ))
 
 
 
@@ -161,7 +225,18 @@ typical word processor."
           (search category-up))
         org-agenda-window-setup 'current-window
         org-agenda-custom-commands
-        `(("N" "Notes" tags "NOTE"
+        `(("n" "Agenda and all TODO's"
+            ((agenda "" nil)
+             (todo "TODO|NEXT|ACTIVE|WAIT"
+	        ((org-agenda-skip-function
+	            (quote
+		     (org-agenda-skip-entry-if
+		      (quote scheduled))))
+	         (org-agenda-tag-filter-preset
+	            (quote nil))))
+             (stuck "" nil)) 
+            nil)
+          ("N" "Notes" tags "NOTE"
            ((org-agenda-overriding-header "Notes")
             (org-tags-match-list-sublevels t)))
           ("g" "GTD"
@@ -178,7 +253,7 @@ typical word processor."
                        ((org-agenda-overriding-header "Next Actions")
                         (org-agenda-tags-todo-honor-ignore-options t)
                         (org-agenda-todo-ignore-scheduled 'future)
-                        ;; TODO: skip if a parent is WAITING or HOLD
+                        ;; TODO: skip if a parent is WAITING or ICEBOX
                         (org-tags-match-list-sublevels t)
                         (org-agenda-sorting-strategy
                          '(todo-state-down effort-up category-keep))))
@@ -194,20 +269,20 @@ typical word processor."
                         ;; TODO: skip if a parent is a project
                         (org-agenda-skip-function
                          '(lambda ()
-                            (or (org-agenda-skip-subtree-if 'todo '("PROJECT" "HOLD" "WAITING"))
+                            (or (org-agenda-skip-subtree-if 'todo '("PROJECT" "ICEBOX" "WAIT"))
                                 (org-agenda-skip-subtree-if 'nottododo '("TODO")))))
                         (org-tags-match-list-sublevels t)
                         (org-agenda-sorting-strategy
                          '(category-keep))))
-            (tags-todo "/WAITING"
+            (tags-todo "/WAIT"
                        ((org-agenda-overriding-header "Waiting")
                         (org-agenda-tags-todo-honor-ignore-options t)
                         (org-agenda-todo-ignore-scheduled 'future)
                         (org-agenda-sorting-strategy
                          '(category-keep))))
-            (tags-todo "-INBOX/HOLD"
-                       ((org-agenda-overriding-header "On Hold")
-                        ;; TODO: skip if a parent is WAITING or HOLD
+            (tags-todo "-INBOX/ICEBOX"
+                       ((org-agenda-overriding-header "Icebox")
+                        ;; TODO: skip if a parent is WAIT or ICEBOX
                         (org-tags-match-list-sublevels nil)
                         (org-agenda-sorting-strategy
                          '(category-keep))))
@@ -218,6 +293,11 @@ typical word processor."
 
 
 (add-hook 'org-agenda-mode-hook 'hl-line-mode)
+
+(add-hook 'org-agenda-mode-hook
+          (lambda ()
+            (visual-line-mode -1)
+            (toggle-truncate-lines 1)))
 
 
 ;;; Org clock
